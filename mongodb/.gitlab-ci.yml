@@ -1,0 +1,59 @@
+stages:
+  - deploy
+
+variables:
+  # GKE info
+  CLUSTER_NAME: primary
+  ZONE: europe-west1-b
+  PROJECT: example-43242
+
+  CHART_PATH: ./charts/mongodb
+
+  SERVICE_ACCOUNT: /etc/deploy/sa.json
+  STAGE_NAMESPACE: reddit-stage
+  PROD_NAMESPACE: reddit-prod
+  STAGE_RELEASE_NAME: reddit-stage-mongodb
+  PROD_RELEASE_NAME: reddit-prod-mongodb
+
+
+# deploy to staging environment
+deploy_staging:
+  stage: deploy
+  image: artemkin/helm-gke:1.0
+  before_script:
+    - mkdir -p /etc/deploy
+    - echo ${service_account} | base64 -d > ${SERVICE_ACCOUNT}
+    - gcloud auth activate-service-account --key-file ${SERVICE_ACCOUNT}
+    - gcloud container clusters get-credentials ${CLUSTER_NAME} --zone ${ZONE} --project ${PROJECT}
+    - helm init --client-only
+  script:
+    - helm upgrade --install
+      --wait
+      --namespace=${STAGE_NAMESPACE}
+      ${STAGE_RELEASE_NAME} ${CHART_PATH}
+  environment:
+    name: staging
+  only:
+  - master
+
+# deploy to production environment (manual)
+deploy_prod:
+  stage: deploy
+  image: artemkin/helm-gke:1.0
+  before_script:
+    - mkdir -p /etc/deploy
+    - echo ${service_account} | base64 -d > ${SERVICE_ACCOUNT}
+    - gcloud auth activate-service-account --key-file ${SERVICE_ACCOUNT}
+    - gcloud container clusters get-credentials ${CLUSTER_NAME} --zone ${ZONE} --project ${PROJECT}
+    - helm init --client-only
+  script:
+    - helm upgrade --install
+      --wait
+      --namespace=${PROD_NAMESPACE}
+      ${PROD_RELEASE_NAME} ${CHART_PATH}
+  environment:
+    name: production
+    url: https://example.com
+  when: manual
+  only:
+  - master

@@ -1,0 +1,7 @@
+apiVersion: v1
+description: A Helm chart for UI service
+name: ui
+version: 0.1.0
+maintainers:
+- name: UI dev team
+  email: ui-dev@mail.com

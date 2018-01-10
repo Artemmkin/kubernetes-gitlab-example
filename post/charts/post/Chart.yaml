@@ -1,0 +1,7 @@
+apiVersion: v1
+description: A Helm chart for Post service
+name: post
+version: 0.1.0
+maintainers:
+- name: Post dev team
+  email: post-dev@mail.com

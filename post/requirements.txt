@@ -1,0 +1,4 @@
+prometheus_client==0.0.21
+flask==0.12.2
+pymongo==3.5.1
+structlog==17.2.0

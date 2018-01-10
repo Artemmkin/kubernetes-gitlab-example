@@ -1,0 +1,112 @@
+stages:
+  - build
+  - test
+  - release
+  - deploy
+
+variables:
+  # GKE info
+  CLUSTER_NAME: primary
+  ZONE: europe-west1-b
+  PROJECT: example-43242
+
+  CONTAINER_IMAGE: artemkin/post
+  CHART_PATH: ./charts/post
+  CONTAINER_IMAGE_BUILT: ${CONTAINER_IMAGE}:${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}
+  CONTAINER_IMAGE_LATEST: ${CONTAINER_IMAGE}:latest
+  CI_REGISTRY: index.docker.io  # container registry URL
+  # When using dind, it's wise to use the overlayfs driver for
+  # improved performance.
+  DOCKER_DRIVER: overlay2
+  DOCKER_HOST: tcp://localhost:2375  # required since we use dind
+
+  SERVICE_ACCOUNT: /etc/deploy/sa.json
+  STAGE_NAMESPACE: reddit-stage
+  PROD_NAMESPACE: reddit-prod
+  STAGE_RELEASE_NAME: reddit-stage-post
+  PROD_RELEASE_NAME: reddit-prod-post
+
+
+# build container image
+build:
+  stage: build
+  image: docker:latest
+  services:
+  - docker:dind
+  script:
+    - echo "Building Dockerfile-based application..."
+    - docker build -t ${CONTAINER_IMAGE_BUILT} .
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD}
+    - echo "Pushing to the Container Registry..."
+    - docker push ${CONTAINER_IMAGE_BUILT}
+
+# run tests against built image
+test:
+  stage: test
+  script:
+    - exit 0
+
+# tag container image that passed the tests successfully
+# and push it to the registry
+release:
+  stage: release
+  image: docker:latest
+  services:
+  - docker:dind
+  script:
+    - echo "Pulling docker image from Container Registry"
+    - docker pull ${CONTAINER_IMAGE_BUILT}
+    - echo "Logging to Container Registry at ${CI_REGISTRY}"
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD}
+    - echo "Pushing to Container Registry..."
+    - docker tag ${CONTAINER_IMAGE_BUILT} ${CONTAINER_IMAGE}:$(cat VERSION)
+    - docker push ${CONTAINER_IMAGE}:$(cat VERSION)
+    - docker tag ${CONTAINER_IMAGE}:$(cat VERSION) ${CONTAINER_IMAGE_LATEST}
+    - docker push ${CONTAINER_IMAGE_LATEST}
+    - echo ""
+  only:
+    - master
+
+# deploy to staging environment
+deploy_staging:
+  stage: deploy
+  image: artemkin/helm-gke:1.0
+  before_script:
+    - mkdir -p /etc/deploy
+    - echo ${service_account} | base64 -d > ${SERVICE_ACCOUNT}
+    - gcloud auth activate-service-account --key-file ${SERVICE_ACCOUNT}
+    - gcloud container clusters get-credentials ${CLUSTER_NAME} --zone ${ZONE} --project ${PROJECT}
+    - helm init --client-only
+  script:
+    - helm upgrade --install
+      --set image.tag=$(cat VERSION)
+      --wait
+      --namespace=${STAGE_NAMESPACE}
+       ${STAGE_RELEASE_NAME} ${CHART_PATH}
+  environment:
+    name: staging
+  only:
+  - master
+
+# deploy to production environment (manual)
+deploy_prod:
+  stage: deploy
+  image: artemkin/helm-gke:1.0
+  before_script:
+    - mkdir -p /etc/deploy
+    - echo ${service_account} | base64 -d > ${SERVICE_ACCOUNT}
+    - gcloud auth activate-service-account --key-file ${SERVICE_ACCOUNT}
+    - gcloud container clusters get-credentials ${CLUSTER_NAME} --zone ${ZONE} --project ${PROJECT}
+    - helm init --client-only
+  script:
+    - helm upgrade --install
+      --set image.tag=$(cat VERSION)
+      --wait
+      --namespace=${PROD_NAMESPACE}
+      ${PROD_RELEASE_NAME} ${CHART_PATH}
+  environment:
+    name: production
+    url: https://example.com
+  when: manual
+  only:
+  - master

@@ -1,0 +1,47 @@
+# Default values for ui-chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+# nameOverride: ui
+replicaCount: 1
+image:
+  repository: artemkin/ui
+  tag: latest
+  pullPolicy: IfNotPresent
+
+envVars:
+  POST_SERVICE_HOST: post
+  POST_SERVICE_PORT: 5000
+
+service:
+  name: ui
+  type: NodePort
+  externalPort: 9292
+  internalPort: 9292
+
+nodeSelector:
+  cloud.google.com/gke-nodepool: default-pool
+
+ingress:
+  enabled: true
+  # Used to create an Ingress record.
+  hosts:
+    - example.com # change to the domain name of your application
+  annotations:
+      kubernetes.io/ingress.global-static-ip-name: reddit-static-ip
+      kubernetes.io/ingress.class: "gce"
+      kubernetes.io/tls-acme: "true"
+  tls:
+    - secretName: ui-tls
+      hosts:
+        - example.com # change to the domain name of your application
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi

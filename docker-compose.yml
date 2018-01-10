@@ -1,0 +1,22 @@
+version: '3.3'
+
+services:
+  mongo:
+    image: mongo:3.4
+
+  post:
+    build: ./post
+    environment:
+      - POST_DATABASE_HOST=mongo
+    depends_on:
+      - mongo
+
+  ui:
+    build: ./ui
+    environment:
+      - POST_SERVICE_HOST=post
+      - POST_SERVICE_PORT=5000
+    ports:
+      - 9292:9292
+    depends_on:
+      - post
