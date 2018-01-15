@@ -3,17 +3,17 @@ stages:
 
 variables:
   # GKE info
-  CLUSTER_NAME: primary
+  CLUSTER_NAME: my-cluster
   ZONE: europe-west1-b
-  PROJECT: example-43242
+  PROJECT: example-123456
 
   CHART_PATH: ./charts/mongodb
 
   SERVICE_ACCOUNT: /etc/deploy/sa.json
-  STAGE_NAMESPACE: reddit-stage
-  PROD_NAMESPACE: reddit-prod
-  STAGE_RELEASE_NAME: reddit-stage-mongodb
-  PROD_RELEASE_NAME: reddit-prod-mongodb
+  STAGE_NAMESPACE: raddit-stage
+  PROD_NAMESPACE: raddit-prod
+  STAGE_RELEASE_NAME: raddit-stage-mongodb
+  PROD_RELEASE_NAME: raddit-prod-mongodb
 
 
 # deploy to staging environment
@@ -53,7 +53,6 @@ deploy_prod:
       ${PROD_RELEASE_NAME} ${CHART_PATH}
   environment:
     name: production
-    url: https://example.com
   when: manual
   only:
   - master

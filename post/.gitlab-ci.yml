@@ -6,9 +6,9 @@ stages:
 
 variables:
   # GKE info
-  CLUSTER_NAME: primary
+  CLUSTER_NAME: my-cluster
   ZONE: europe-west1-b
-  PROJECT: example-43242
+  PROJECT: example-123456
 
   CONTAINER_IMAGE: artemkin/post
   CHART_PATH: ./charts/post
@@ -21,10 +21,10 @@ variables:
   DOCKER_HOST: tcp://localhost:2375  # required since we use dind
 
   SERVICE_ACCOUNT: /etc/deploy/sa.json
-  STAGE_NAMESPACE: reddit-stage
-  PROD_NAMESPACE: reddit-prod
-  STAGE_RELEASE_NAME: reddit-stage-post
-  PROD_RELEASE_NAME: reddit-prod-post
+  STAGE_NAMESPACE: raddit-stage
+  PROD_NAMESPACE: raddit-prod
+  STAGE_RELEASE_NAME: raddit-stage-post
+  PROD_RELEASE_NAME: raddit-prod-post
 
 
 # build container image
@@ -80,6 +80,7 @@ deploy_staging:
   script:
     - helm upgrade --install
       --set image.tag=$(cat VERSION)
+      --set image.repository=${CONTAINER_IMAGE}
       --wait
       --namespace=${STAGE_NAMESPACE}
        ${STAGE_RELEASE_NAME} ${CHART_PATH}
@@ -101,12 +102,12 @@ deploy_prod:
   script:
     - helm upgrade --install
       --set image.tag=$(cat VERSION)
+      --set image.repository=${CONTAINER_IMAGE}
       --wait
       --namespace=${PROD_NAMESPACE}
       ${PROD_RELEASE_NAME} ${CHART_PATH}
   environment:
     name: production
-    url: https://example.com
   when: manual
   only:
   - master

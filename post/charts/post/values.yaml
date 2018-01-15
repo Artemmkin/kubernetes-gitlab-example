@@ -4,7 +4,7 @@
 # nameOverride: post
 replicaCount: 1
 image:
-  repository: artemkin/post
+  repository: dockerhub/post
   tag: latest
   pullPolicy: IfNotPresent
 

@@ -2,9 +2,9 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 # nameOverride: ui
-replicaCount: 1
+replicaCount: 2
 image:
-  repository: artemkin/ui
+  repository: dockerbub/ui
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -27,9 +27,10 @@ ingress:
   hosts:
     - example.com # change to the domain name of your application
   annotations:
-      kubernetes.io/ingress.global-static-ip-name: reddit-static-ip
+      kubernetes.io/ingress.global-static-ip-name: raddit-static-ip
       kubernetes.io/ingress.class: "gce"
       kubernetes.io/tls-acme: "true"
+      # kubernetes.io/ingress.allow-http: "false"
   tls:
     - secretName: ui-tls
       hosts:

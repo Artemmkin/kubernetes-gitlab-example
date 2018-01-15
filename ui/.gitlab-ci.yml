@@ -6,25 +6,24 @@ stages:
 
 variables:
   # GKE info
-  CLUSTER_NAME: primary
+  CLUSTER_NAME: my-cluster
   ZONE: europe-west1-b
-  PROJECT: example-43242
+  PROJECT: example-123456
+  DOMAIN_NAME: devops-by-practice.fun # application domain name
 
   CHART_PATH: ./charts/ui
   CONTAINER_IMAGE: artemkin/ui
   CONTAINER_IMAGE_BUILT: ${CONTAINER_IMAGE}:${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}
   CONTAINER_IMAGE_LATEST: ${CONTAINER_IMAGE}:latest
   CI_REGISTRY: index.docker.io  # container registry URL
-  # When using dind, it's wise to use the overlayfs driver for
-  # improved performance.
   DOCKER_DRIVER: overlay2
   DOCKER_HOST: tcp://localhost:2375  # required since we use dind
 
   SERVICE_ACCOUNT: /etc/deploy/sa.json
-  STAGE_NAMESPACE: reddit-stage
-  PROD_NAMESPACE: reddit-prod
-  STAGE_RELEASE_NAME: reddit-stage-ui
-  PROD_RELEASE_NAME: reddit-prod-ui
+  STAGE_NAMESPACE: raddit-stage
+  PROD_NAMESPACE: raddit-prod
+  STAGE_RELEASE_NAME: raddit-stage-ui
+  PROD_RELEASE_NAME: raddit-prod-ui
 
 # build container image
 build:
@@ -80,6 +79,7 @@ deploy_staging:
     - helm upgrade --install
       --set image.tag=$(cat VERSION)
       --set ingress.enabled=false
+      --set image.repository=${CONTAINER_IMAGE}
       --wait
       --namespace=${STAGE_NAMESPACE}
        ${STAGE_RELEASE_NAME} ${CHART_PATH}
@@ -101,12 +101,15 @@ deploy_prod:
   script:
     - helm upgrade --install
       --set image.tag=$(cat VERSION)
+      --set image.repository=${CONTAINER_IMAGE}
+      --set ingress.hosts[0]=${DOMAIN_NAME}
+      --set ingress.tls[0].secretName=ui-tls,ingress.tls[0].hosts={${DOMAIN_NAME}}
       --wait
       --namespace=${PROD_NAMESPACE}
       ${PROD_RELEASE_NAME} ${CHART_PATH}
   environment:
     name: production
-    url: https://example.com
+    url: https://${DOMAIN_NAME}
   when: manual
   only:
   - master
